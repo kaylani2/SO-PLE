@@ -11,31 +11,47 @@
 #include <stdio.h> // stdin
 #include <stdlib.h> // strtoul ()
 #include <string.h> // strcat ()
+#include <signal.h> // signal ()
 #include <sys/types.h> // pid_t
 #include <unistd.h>
 #include <sys/wait.h>
 
 #define OK                              0
+#define ERRO_SINAL_DESCONHECIDO         1
 #define COMPRIMENTO_MAXIMO              50
 #define NUMERO_MAXIMO_ARGUMENTOS        20
 #define EOS                             '\0'
 
+void signalHandler (int inputSignal)
+{
+  if (inputSignal == SIGUSR1)
+    printf ("Received SIGUSR1\n");
+  else
+    printf ("Sinal desconhecido.\n");
+}
+
+
 int main ()
 {
-  char comando [COMPRIMENTO_MAXIMO];
+  char comando [COMPRIMENTO_MAXIMO] = "";
   char comandoComCaminho [COMPRIMENTO_MAXIMO] = "/bin/";
-  char numeroDeArgumentosAuxiliar [COMPRIMENTO_MAXIMO];
-  char buffer [COMPRIMENTO_MAXIMO];
-  unsigned long int numeroDeArgumentos = 0;
-  // TODO: /\ Mudar para unsigned depois de testar o cast com strtoul
-  unsigned int indiceArgumentos;
+  char numeroDeArgumentosAuxiliar [COMPRIMENTO_MAXIMO] = "";
+  char buffer [COMPRIMENTO_MAXIMO] = "";
+  unsigned long int numeroDeArgumentos = 0; // long para usar strtoul ()
+  unsigned char indiceArgumentos = 0;
   char *argumentos [NUMERO_MAXIMO_ARGUMENTOS];
+  pid_t pidFilho = 0;
 
-  pid_t child_pid = 0;
-  // TODO: /\ Mudar o nome, apenas um teste
+  if (signal (SIGUSR1, signalHandler) == SIG_ERR)
+  {
+    printf("Sinal desconhecido, encerrando.\n");
+    return ERRO_SINAL_DESCONHECIDO;
+  }
+
 
   // Entrada
   printf ("Qual comando quer executar?\n");
+  // INICIO DO ESCOPO DE RECEBIMENTO DO SINAL SIGUSR1
   fgets (comando, COMPRIMENTO_MAXIMO + 2, stdin);
   comando [strlen (comando) - 1] = EOS;
   strcat (comandoComCaminho, comando);
@@ -46,16 +62,18 @@ int main ()
   //printf ("Numero de argumentos: %lu\n", numeroDeArgumentos); // DEBUG
 
   // Construir vetor de argumentos
-  for (indiceArgumentos = 0; indiceArgumentos < numeroDeArgumentos;
+  strncpy (argumentos [0], comando, COMPRIMENTO_MAXIMO);
+  for (indiceArgumentos = 1; indiceArgumentos < numeroDeArgumentos + 1;
        indiceArgumentos++)
   {
     argumentos [indiceArgumentos] = malloc (COMPRIMENTO_MAXIMO * sizeof (char));
-    printf ("Digite o argumento %u.\n", (indiceArgumentos + 1));
+    printf ("Digite o argumento %u.\n", (indiceArgumentos));
     fgets (buffer, COMPRIMENTO_MAXIMO + 2, stdin);
     buffer [strlen (buffer) - 1] = EOS;
     strncpy (argumentos [indiceArgumentos], buffer, COMPRIMENTO_MAXIMO);
   }
   argumentos [indiceArgumentos] = NULL;
+  // FIM DO ESCOPO DE RECEBIMENTO DO SINAL SIGUSR1
 
 
   // DEBUG
@@ -70,9 +88,12 @@ int main ()
 
 
   // Executar processo
-  child_pid = fork ();
-  if (child_pid == 0) // fork OK
+  pidFilho = fork ();
+  if (pidFilho == 0) // fork OK
   {
+    // DEBUG
+    //char *args[] =  {"ping", "google.com", NULL};
+    //execv ("/bin/ping", args);
     execv (comandoComCaminho, argumentos);
   }
   else
