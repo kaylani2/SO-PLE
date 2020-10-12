@@ -23,9 +23,9 @@
 int main ()
 {
   char comando [COMPRIMENTO_MAXIMO];
-  char comandoComCaminho [COMPRIMENTO_MAXIMO];
+  char comandoComCaminho [COMPRIMENTO_MAXIMO] = "/bin/";
   char numeroDeArgumentosAuxiliar [COMPRIMENTO_MAXIMO];
-  char *strtoulDummy = NULL;
+  char buffer [COMPRIMENTO_MAXIMO];
   unsigned long int numeroDeArgumentos = 0;
   // TODO: /\ Mudar para unsigned depois de testar o cast com strtoul
   unsigned int indiceArgumentos;
@@ -38,38 +38,42 @@ int main ()
   printf ("Qual comando quer executar?\n");
   fgets (comando, COMPRIMENTO_MAXIMO + 2, stdin);
   comando [strlen (comando) - 1] = EOS;
-  printf ("Comando sem caminho: %s\n", comando); // DEBUG
-  strcpy (comandoComCaminho, "/bin/");
   strcat (comandoComCaminho, comando);
-  printf ("Comando com caminho: %s\n", comandoComCaminho); // DEBUG
-  // TODO: Verificar se o comando existe
-
   printf ("Quantos argumentos você quer digitar?\n");
   fgets (numeroDeArgumentosAuxiliar, COMPRIMENTO_MAXIMO + 2, stdin);
-  numeroDeArgumentos = strtoul (numeroDeArgumentosAuxiliar, &strtoulDummy, 10);
+  numeroDeArgumentos = strtoul (numeroDeArgumentosAuxiliar, NULL, 10);
+  // TODO: Tratar numero invalido
+  //printf ("Numero de argumentos: %lu\n", numeroDeArgumentos); // DEBUG
 
-  printf ("1");
-  for (indiceArgumentos = 0; indiceArgumentos < numeroDeArgumentos; indiceArgumentos++)
+  // Construir vetor de argumentos
+  for (indiceArgumentos = 0; indiceArgumentos < numeroDeArgumentos;
+       indiceArgumentos++)
   {
+    argumentos [indiceArgumentos] = malloc (COMPRIMENTO_MAXIMO * sizeof (char));
     printf ("Digite o argumento %u.\n", (indiceArgumentos + 1));
-    fgets (argumentos [indiceArgumentos], COMPRIMENTO_MAXIMO + 2, stdin);
+    fgets (buffer, COMPRIMENTO_MAXIMO + 2, stdin);
+    buffer [strlen (buffer) - 1] = EOS;
+    strncpy (argumentos [indiceArgumentos], buffer, COMPRIMENTO_MAXIMO);
   }
+  argumentos [indiceArgumentos] = NULL;
 
-  printf ("akos2\n");
+
+  // DEBUG
   printf ("Argumentos:\n");
-  for (indiceArgumentos = 0; indiceArgumentos < numeroDeArgumentos; indiceArgumentos++)
-    printf ("%s", argumentos [indiceArgumentos]);
+  for (indiceArgumentos = 0; indiceArgumentos < numeroDeArgumentos;
+       indiceArgumentos++)
+  {
+    printf ("%s\n", argumentos [indiceArgumentos]);
+  }
+  printf ("Comando com caminho: %s\n", comandoComCaminho);
+  printf ("Comando sem caminho: %s\n", comando);
 
 
-  printf ("2");
-  // Execução
+  // Executar processo
   child_pid = fork ();
   if (child_pid == 0) // fork OK
   {
-    printf ("Comando com caminho: %s\n", comandoComCaminho);
-    printf ("Comando sem caminho: %s\n", comando);
-    //execlp ("/bin/ping", "ping", "8.8.8.8", NULL);
-    execlp (comandoComCaminho, comando, argumentos [0], NULL);
+    execv (comandoComCaminho, argumentos);
   }
   else
   {
