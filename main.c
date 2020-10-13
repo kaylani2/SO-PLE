@@ -4,10 +4,6 @@
  *
  */
 
-// Existe numero maximo de argumentos?
-// Existe comprimento maximo de argumentos?
-// Existe comprimento maximo para os comandos?
-
 #include <stdio.h> // stdin
 #include <stdlib.h> // strtoul ()
 #include <string.h> // strcat ()
@@ -67,7 +63,7 @@ int main ()
        indiceArgumentos++)
   {
     argumentos [indiceArgumentos] = malloc (COMPRIMENTO_MAXIMO * sizeof (char));
-    printf ("Digite o argumento %u.\n", (indiceArgumentos));
+    printf ("Digite o argumento %u: ", (indiceArgumentos));
     fgets (buffer, COMPRIMENTO_MAXIMO + 2, stdin);
     buffer [strlen (buffer) - 1] = EOS;
     strncpy (argumentos [indiceArgumentos], buffer, COMPRIMENTO_MAXIMO);
@@ -91,9 +87,6 @@ int main ()
   pidFilho = fork ();
   if (pidFilho == 0) // fork OK
   {
-    // DEBUG
-    //char *args[] =  {"ping", "google.com", NULL};
-    //execv ("/bin/ping", args);
     execv (comandoComCaminho, argumentos);
   }
   else
