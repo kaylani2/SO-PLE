@@ -12,16 +12,25 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+
 #define OK                              0
+#define ACEITA_INTERRUPCAO              0
+#define NAO_ACEITA_INTERRUPCAO          1
 #define ERRO_SINAL_DESCONHECIDO         1
 #define COMPRIMENTO_MAXIMO              50
 #define NUMERO_MAXIMO_ARGUMENTOS        20
 #define EOS                             '\0'
 
+unsigned char aceitaInterrupcao = NAO_ACEITA_INTERRUPCAO;
+
 void signalHandler (int inputSignal)
 {
   if (inputSignal == SIGUSR1)
+  {
+    aceitaInterrupcao = NAO_ACEITA_INTERRUPCAO;
     printf ("Received SIGUSR1\n");
+    // GOTO reinicio do programa
+  }
   else
     printf ("Sinal desconhecido.\n");
 }
@@ -48,6 +57,7 @@ int main ()
   // Entrada
   printf ("Qual comando quer executar?\n");
   // INICIO DO ESCOPO DE RECEBIMENTO DO SINAL SIGUSR1
+  aceitaInterrupcao = ACEITA_INTERRUPCAO;
   fgets (comando, COMPRIMENTO_MAXIMO + 2, stdin);
   comando [strlen (comando) - 1] = EOS;
   strcat (comandoComCaminho, comando);
@@ -58,10 +68,12 @@ int main ()
   //printf ("Numero de argumentos: %lu\n", numeroDeArgumentos); // DEBUG
 
   // Construir vetor de argumentos
+  argumentos [0] = malloc (COMPRIMENTO_MAXIMO * sizeof (char));
   strncpy (argumentos [0], comando, COMPRIMENTO_MAXIMO);
   for (indiceArgumentos = 1; indiceArgumentos < numeroDeArgumentos + 1;
        indiceArgumentos++)
   {
+    // TODO: parar de alocar o comprimento maximo
     argumentos [indiceArgumentos] = malloc (COMPRIMENTO_MAXIMO * sizeof (char));
     printf ("Digite o argumento %u: ", (indiceArgumentos));
     fgets (buffer, COMPRIMENTO_MAXIMO + 2, stdin);
@@ -70,6 +82,7 @@ int main ()
   }
   argumentos [indiceArgumentos] = NULL;
   // FIM DO ESCOPO DE RECEBIMENTO DO SINAL SIGUSR1
+  aceitaInterrupcao = NAO_ACEITA_INTERRUPCAO;
 
 
   // DEBUG
