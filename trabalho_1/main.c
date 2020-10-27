@@ -17,26 +17,29 @@
 #define ACEITA_INTERRUPCAO              0
 #define NAO_ACEITA_INTERRUPCAO          1
 #define ERRO_SINAL_DESCONHECIDO         1
+#define SINAL_RECEBIDO                  2
 #define COMPRIMENTO_MAXIMO              50
 #define NUMERO_MAXIMO_ARGUMENTOS        20
 #define EOS                             '\0'
 
-unsigned char aceitaInterrupcao = NAO_ACEITA_INTERRUPCAO;
+int aceitaInterrupcao = NAO_ACEITA_INTERRUPCAO;
 
 void signalHandler (int inputSignal)
 {
   if (inputSignal == SIGUSR1)
-  {
-    aceitaInterrupcao = NAO_ACEITA_INTERRUPCAO;
-    printf ("Received SIGUSR1\n");
-    // GOTO reinicio do programa
-  }
+    if (aceitaInterrupcao == ACEITA_INTERRUPCAO)
+    {
+      aceitaInterrupcao = NAO_ACEITA_INTERRUPCAO;
+      printf ("Received SIGUSR1\n");
+    }
+    else
+      printf ("SIGUSR1 recebido, mas fora do escopo de recebimento.\n");
   else
     printf ("Sinal desconhecido.\n");
 }
 
 
-int main ()
+int simularShell ()
 {
   char comando [COMPRIMENTO_MAXIMO] = "";
   char comandoComCaminho [COMPRIMENTO_MAXIMO] = "/bin/";
@@ -55,14 +58,24 @@ int main ()
 
 
   // Entrada
+  aceitaInterrupcao = ACEITA_INTERRUPCAO;
   printf ("Qual comando quer executar?\n");
   // INICIO DO ESCOPO DE RECEBIMENTO DO SINAL SIGUSR1
-  aceitaInterrupcao = ACEITA_INTERRUPCAO;
   fgets (comando, COMPRIMENTO_MAXIMO + 2, stdin);
+  if (aceitaInterrupcao == NAO_ACEITA_INTERRUPCAO) // recebeu o sinal
+  {
+    printf ("SIGUSR1 recebido. Reiniciando.\n");
+    return SINAL_RECEBIDO;
+  }
   comando [strlen (comando) - 1] = EOS;
   strcat (comandoComCaminho, comando);
   printf ("Quantos argumentos você quer digitar?\n");
   fgets (numeroDeArgumentosAuxiliar, COMPRIMENTO_MAXIMO + 2, stdin);
+  if (aceitaInterrupcao == NAO_ACEITA_INTERRUPCAO) // recebeu o sinal
+  {
+    printf ("SIGUSR1 recebido. Reiniciando.\n");
+    return SINAL_RECEBIDO;
+  }
   numeroDeArgumentos = strtoul (numeroDeArgumentosAuxiliar, NULL, 10);
   // TODO: Tratar numero invalido
   //printf ("Numero de argumentos: %lu\n", numeroDeArgumentos); // DEBUG
@@ -77,6 +90,11 @@ int main ()
     argumentos [indiceArgumentos] = malloc (COMPRIMENTO_MAXIMO * sizeof (char));
     printf ("Digite o argumento %u: ", (indiceArgumentos));
     fgets (buffer, COMPRIMENTO_MAXIMO + 2, stdin);
+    if (aceitaInterrupcao == NAO_ACEITA_INTERRUPCAO) // recebeu o sinal
+    {
+      printf ("SIGUSR1 recebido. Reiniciando.\n");
+      return SINAL_RECEBIDO;
+    }
     buffer [strlen (buffer) - 1] = EOS;
     strncpy (argumentos [indiceArgumentos], buffer, COMPRIMENTO_MAXIMO);
   }
@@ -108,6 +126,15 @@ int main ()
     printf ("Comando executado com sucesso!\n");
   }
 
+
+  return OK;
+}
+
+int main ()
+{
+  int sinalRecebido = SINAL_RECEBIDO;
+  while (sinalRecebido == SINAL_RECEBIDO)
+    sinalRecebido = simularShell ();
 
   return OK;
 }
