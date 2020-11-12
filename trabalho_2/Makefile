@@ -3,7 +3,7 @@ CC = gcc
 
 # compiler flags:
 #  -Wall turns on most, but not all, compiler warnings
-CFLAGS  = -Wall
+CFLAGS  = -Wall -pthread
 
 # the build target executable:
 TARGET = main
