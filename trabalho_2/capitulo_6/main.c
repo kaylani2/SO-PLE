@@ -37,8 +37,6 @@ void *search (void *listaEncadeada)
    * Podem executar com um insert
    * Nao podem executar com um delete
    */
-  //char k = (char ) listaEncadeada;
-  char c = *((char *) listaEncadeada);
   pthread_mutex_lock (&mutexDelete);
   printf ("Estou buscando...\n");
   usleep (SLEEP_TIME);
