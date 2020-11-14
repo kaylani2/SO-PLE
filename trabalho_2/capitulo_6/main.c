@@ -1,7 +1,7 @@
 /*
  * Autor: Kaylani Bochie
  * Trabalho 2 de Sistemas Operacionais (PLE)
- * Capitulo 6: The search-insert-delete problem
+ * Capitulo 6.1: The search-insert-delete problem
  *
  */
 
@@ -9,6 +9,7 @@
  * Solucao em alto nivel:
  * - Todos pegam o lock do delete
  * - insert () e delete () pegam a lock do insert
+ * - Garantir que os locks sejam pegos sempre em ordem
  */
 
 #include <stdio.h> // stdin
@@ -27,7 +28,7 @@
 
 pthread_mutex_t mutexDelete = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexInsert = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t condDelete = PTHREAD_COND_INITIALIZER;
+pthread_cond_t condDelete = PTHREAD_COND_INITIALIZER; // TODO: REMOVER
 
 void *search (void *listaEncadeada)
 {
@@ -36,6 +37,8 @@ void *search (void *listaEncadeada)
    * Podem executar com um insert
    * Nao podem executar com um delete
    */
+  //char k = (char ) listaEncadeada;
+  char c = *((char *) listaEncadeada);
   pthread_mutex_lock (&mutexDelete);
   printf ("Estou buscando...\n");
   usleep (SLEEP_TIME);
