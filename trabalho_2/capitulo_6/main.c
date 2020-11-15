@@ -13,22 +13,16 @@
  */
 
 #include <stdio.h> // stdin
-#include <stdlib.h> // strtoul ()
-#include <string.h> // strcat ()
-#include <signal.h> // signal ()
-#include <sys/types.h> // pid_t
-#include <unistd.h>
+#include <unistd.h> // usleep ()
 #include <sys/wait.h>
 #include <pthread.h>
 
 #define OK                              0
 #define NUMERO_DE_REPETICOES            5000
 #define SLEEP_TIME                      10 // micro
-#define THREAD_ARRAY_SIZE               4
 
 pthread_mutex_t mutexDelete = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexInsert = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t condDelete = PTHREAD_COND_INITIALIZER; // TODO: REMOVER
 
 void *search (void *listaEncadeada)
 {

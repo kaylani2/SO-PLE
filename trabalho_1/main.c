@@ -14,6 +14,7 @@
 
 
 #define OK                              0
+#define COMANDO_INEXISTENTE             1
 #define ACEITA_INTERRUPCAO              0
 #define NAO_ACEITA_INTERRUPCAO          1
 #define ERRO_SINAL_DESCONHECIDO         1
@@ -23,6 +24,17 @@
 #define EOS                             '\0'
 
 int aceitaInterrupcao = NAO_ACEITA_INTERRUPCAO;
+
+
+
+int checarSeComandoExiste (char *comandoComCaminho) {
+  if ( (access (comandoComCaminho, F_OK) != -1) &&
+       (access (comandoComCaminho, X_OK) != -1))
+    return OK;
+
+  return COMANDO_INEXISTENTE;
+}
+
 
 void signalHandler (int inputSignal)
 {
@@ -52,7 +64,7 @@ int simularShell ()
 
   if (signal (SIGUSR1, signalHandler) == SIG_ERR)
   {
-    printf("Sinal desconhecido, encerrando.\n");
+    printf ("Sinal desconhecido, encerrando.\n");
     return ERRO_SINAL_DESCONHECIDO;
   }
 
@@ -77,8 +89,6 @@ int simularShell ()
     return SINAL_RECEBIDO;
   }
   numeroDeArgumentos = strtoul (numeroDeArgumentosAuxiliar, NULL, 10);
-  // TODO: Tratar numero invalido
-  //printf ("Numero de argumentos: %lu\n", numeroDeArgumentos); // DEBUG
 
   // Construir vetor de argumentos
   argumentos [0] = malloc (COMPRIMENTO_MAXIMO * sizeof (char));
@@ -86,7 +96,6 @@ int simularShell ()
   for (indiceArgumentos = 1; indiceArgumentos < numeroDeArgumentos + 1;
        indiceArgumentos++)
   {
-    // TODO: parar de alocar o comprimento maximo
     argumentos [indiceArgumentos] = malloc (COMPRIMENTO_MAXIMO * sizeof (char));
     printf ("Digite o argumento %u: ", (indiceArgumentos));
     fgets (buffer, COMPRIMENTO_MAXIMO + 2, stdin);
@@ -104,27 +113,31 @@ int simularShell ()
 
 
   // DEBUG
-  printf ("Argumentos:\n");
-  for (indiceArgumentos = 0; indiceArgumentos < numeroDeArgumentos;
-       indiceArgumentos++)
-  {
-    printf ("%s\n", argumentos [indiceArgumentos]);
-  }
-  printf ("Comando com caminho: %s\n", comandoComCaminho);
-  printf ("Comando sem caminho: %s\n", comando);
+  //printf ("Argumentos:\n");
+  //for (indiceArgumentos = 0; indiceArgumentos < numeroDeArgumentos;
+  //     indiceArgumentos++)
+  //{
+  //  printf ("%s\n", argumentos [indiceArgumentos]);
+  //}
+  //printf ("Comando com caminho: %s\n", comandoComCaminho);
+  //printf ("Comando sem caminho: %s\n", comando);
 
-
-  // Executar processo
-  pidFilho = fork ();
-  if (pidFilho == 0) // fork OK
+  if (checarSeComandoExiste (comandoComCaminho) == OK)
   {
-    execv (comandoComCaminho, argumentos);
+    // Executar processo
+    pidFilho = fork ();
+    if (pidFilho == 0) // fork OK
+    {
+      execv (comandoComCaminho, argumentos);
+    }
+    else
+    {
+      wait (NULL);
+      printf ("Comando executado com sucesso!\n");
+    }
   }
   else
-  {
-    wait (NULL);
-    printf ("Comando executado com sucesso!\n");
-  }
+    printf ("Comando inexistente!\n");
 
 
   return OK;
