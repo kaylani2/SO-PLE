@@ -25,7 +25,7 @@
 #define OK                              0
 #define VERDADEIRO                      0
 #define FALSO                           1
-#define MAXIMO_VAGAS                   10 
+#define MAXIMO_VAGAS                    10
 #define NUMERO_DE_REPETICOES            5
 #define SLEEP_TIME                      10 // micro
 #define THREAD_ARRAY_SIZE               4
@@ -39,6 +39,7 @@ unsigned int vagas;
 
 void depart ()
 {
+  onibusEstaParado = FALSO;
   printf ("Onibus saiu.\n");
 }
 
@@ -56,25 +57,25 @@ void *bus (void *argumentos)
   printf ("Onibus chegou!\n");
   pthread_cond_signal (&onibusChegou);
 
-
   while (1)
   {
-    pthread_mutex_lock (&mutex);
     if (vagas == 0)
     {
       depart ();
       primeiraFila = segundaFila;
       segundaFila = 0;
-      return OK;
+      pthread_mutex_unlock (&mutex);
+      return NULL;
     }
     while (primeiraFila != 0); // tem gente pra embarcar
     depart ();
     primeiraFila = segundaFila;
     segundaFila = 0;
-    return OK;
-
     pthread_mutex_unlock (&mutex);
+    return NULL;
   }
+
+  return NULL;
 }
 
 
@@ -83,28 +84,31 @@ void *rider (void *argumentos)
   pthread_mutex_lock (&mutex);
   if (onibusEstaParado == FALSO) // fila unica
   {
+    printf ("Entrei na primeira fila.\n");
     primeiraFila++;
     pthread_cond_wait (&onibusChegou, &mutex);
+    printf ("antes do boar dbus");
     boardBus (); // decrementa fila
   }
   else
   {
+    printf ("Entrei na segunda fila.\n");
     segundaFila++;
     pthread_cond_wait (&onibusChegou, &mutex);
     //boardBus (); // decrementa fila
   }
+
   pthread_mutex_unlock (&mutex);
-  return OK;
+
+  return NULL;
 }
 
 int main ()
 {
   pthread_t t0, t1, t2, t3, t4, t5, t6;
   unsigned int repeticoes = NUMERO_DE_REPETICOES;
-  // 4 search (), 2 insert (), 1 delete ()
 
   repeticoes = 10;
-  while (repeticoes != 0)
   {
     printf ("repeticoes %d\n", repeticoes);
     pthread_create (&t0, NULL, rider, NULL);
@@ -115,6 +119,7 @@ int main ()
     pthread_create (&t5, NULL, rider, NULL);
     pthread_create (&t6, NULL, bus, NULL);
 
+    pthread_join (t6, NULL);
     repeticoes--;
   }
 
