@@ -15,22 +15,86 @@
 #include <pthread.h>
 
 #define OK                              0
+#define BARBEARIA_CHEIA                 1
 #define VERDADEIRO                      0
 #define FALSO                           1
+#define NUMERO_MAXIMO_DE_CADEIRAS       2 // n arbitrario
 #define NUMERO_DE_REPETICOES            20
 #define SLEEP_TIME                      10 // micro
 
-unsigned int numeroDeOxigenios = 0;
-unsigned int numeroDeHidrogenios = 0;
-
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t chegouCliente = PTHREAD_COND_INITIALIZER;
+pthread_cond_t barbeiroEstaLivre = PTHREAD_COND_INITIALIZER;
+unsigned int barbeiroEstaOcupado = FALSO;
+unsigned int cadeirasDisponiveis = NUMERO_MAXIMO_DE_CADEIRAS;
 
-void *oxygen (void *argumento)
+void balk ()
+{
+  printf ("Barbearia estava cheia.\n");
+}
+
+void cutHair ()
+{
+  usleep (SLEEP_TIME);
+  printf ("Cortei o cabelo do cliente.\n");
+}
+
+void getHairCut ()
+{
+  usleep (SLEEP_TIME);
+  printf ("O barbeiro cortou meu cabelo.\n");
+}
+
+void *barber (void *argumento)
 {
   pthread_mutex_lock (&mutex);
 
+  while (1 == 1)
+  {
+    pthread_cond_wait (&chegouCliente, &mutex);
+    cutHair ();
+    barbeiroEstaOcupado = 0;
+    pthread_cond_signal (&barbeiroEstaLivre);
+  }
 
   pthread_mutex_unlock (&mutex);
+  return NULL;
+}
+
+void *customer (void *argumento)
+{
+  pthread_mutex_lock (&mutex);
+  if (cadeirasDisponiveis == 0)
+  {
+    balk ();
+    pthread_mutex_unlock (&mutex);
+    return NULL;
+  }
+
+  if (barbeiroEstaOcupado)
+  {
+    printf ("Sentando e esperando.\n");
+    cadeirasDisponiveis--;
+    pthread_cond_wait (&barbeiroEstaLivre, &mutex);
+
+    while (barbeiroEstaOcupado);
+
+    barbeiroEstaOcupado = 1;
+    cadeirasDisponiveis++;
+    getHairCut ();
+    pthread_cond_signal (&chegouCliente);
+  }
+  else // barbeiro estava livre (dormindo)
+  {
+    printf ("Barbearia estava vazia.\n");
+    while (barbeiroEstaOcupado == VERDADEIRO);
+    barbeiroEstaOcupado = VERDADEIRO;
+    //getHairCut ();
+    pthread_cond_signal (&chegouCliente);
+  }
+
+  pthread_mutex_unlock (&mutex);
+
   return OK;
 }
 
@@ -55,12 +119,6 @@ int main ()
     pthread_create (&t5, NULL, customer, NULL);
     pthread_create (&t6, NULL, customer, NULL);
 
-    pthread_join (t0, NULL);
-    pthread_join (t1, NULL);
-    pthread_join (t2, NULL);
-    pthread_join (t3, NULL);
-    pthread_join (t4, NULL);
-    pthread_join (t5, NULL);
     pthread_join (t6, NULL);
 
     repeticoes--;

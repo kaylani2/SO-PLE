@@ -30,101 +30,85 @@
 #define SLEEP_TIME                      10 // micro
 #define THREAD_ARRAY_SIZE               4
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexFila = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t onibusChegou = PTHREAD_COND_INITIALIZER;
-unsigned int onibusEstaParado = FALSO;
-unsigned int primeiraFila = 0;
+unsigned int fila = 0;
 unsigned int segundaFila = 0;
-unsigned int vagas;
-
-void depart ()
-{
-  onibusEstaParado = FALSO;
-  printf ("Onibus saiu.\n");
-}
-
-void boardBus ()
-{
-  primeiraFila--;
-  printf ("Embarquei.\n");
-}
+unsigned int onibusEstaParado = FALSO;
 
 void *bus (void *argumentos)
 {
-  pthread_mutex_lock (&mutex);
-  vagas = MAXIMO_VAGAS;
+  pthread_mutex_lock (&mutexFila); // ninguem mais entra na fila
   onibusEstaParado = VERDADEIRO;
-  printf ("Onibus chegou!\n");
-  pthread_cond_signal (&onibusChegou);
+  pthread_mutex_unlock (&mutexFila);
 
-  while (1)
+  pthread_mutex_lock (&mutexFila);
+  if (fila == 0)
   {
-    if (vagas == 0)
-    {
-      depart ();
-      primeiraFila = segundaFila;
-      segundaFila = 0;
-      pthread_mutex_unlock (&mutex);
-      return NULL;
-    }
-    while (primeiraFila != 0); // tem gente pra embarcar
-    depart ();
-    primeiraFila = segundaFila;
-    segundaFila = 0;
-    pthread_mutex_unlock (&mutex);
+    printf ("Onibus saiu.\n");
+    // depart ()
+    pthread_mutex_unlock (&mutexFila);
     return NULL;
   }
 
+
+  while (fila > 0)
+    fila--;
+  printf ("Onibus saiu.\n");
+  fila = segundaFila;
+  segundaFila = 0;
+  // depart ()
+  pthread_mutex_unlock (&mutexFila);
+  return NULL;
+
+  pthread_mutex_unlock (&mutexFila);
+
   return NULL;
 }
-
-
 void *rider (void *argumentos)
 {
-  pthread_mutex_lock (&mutex);
-  if (onibusEstaParado == FALSO) // fila unica
+  pthread_mutex_lock (&mutexFila);
+  if (onibusEstaParado == FALSO)
   {
-    printf ("Entrei na primeira fila.\n");
-    primeiraFila++;
-    pthread_cond_wait (&onibusChegou, &mutex);
-    printf ("antes do boar dbus");
-    boardBus (); // decrementa fila
+    printf ("Entrei na fila.\n");
+    fila++;
   }
   else
   {
-    printf ("Entrei na segunda fila.\n");
+    printf ("Esperei o proximo onibus.\n");
     segundaFila++;
-    pthread_cond_wait (&onibusChegou, &mutex);
-    //boardBus (); // decrementa fila
   }
+  pthread_mutex_unlock (&mutexFila);
 
-  pthread_mutex_unlock (&mutex);
+  while (onibusEstaParado == FALSO);
+  pthread_mutex_lock (&mutexFila);
+  fila--;
+  printf ("Embarquei.\n"); // boardBus ()
 
+  pthread_mutex_unlock (&mutexFila);
   return NULL;
 }
 
+
 int main ()
 {
-  pthread_t t0, t1, t2, t3, t4, t5, t6;
-  unsigned int repeticoes = NUMERO_DE_REPETICOES;
+  pthread_t t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
 
-  repeticoes = 10;
-  {
-    printf ("repeticoes %d\n", repeticoes);
-    pthread_create (&t0, NULL, rider, NULL);
-    pthread_create (&t1, NULL, rider, NULL);
-    pthread_create (&t2, NULL, rider, NULL);
-    pthread_create (&t3, NULL, rider, NULL);
-    pthread_create (&t4, NULL, rider, NULL);
-    pthread_create (&t5, NULL, rider, NULL);
-    pthread_create (&t6, NULL, bus, NULL);
+  pthread_create (&t0, NULL, rider, NULL);
+  pthread_create (&t1, NULL, rider, NULL);
+  pthread_create (&t2, NULL, rider, NULL);
+  pthread_create (&t3, NULL, rider, NULL);
+  pthread_create (&t4, NULL, rider, NULL);
+  pthread_create (&t5, NULL, rider, NULL);
+  pthread_create (&t6, NULL, bus, NULL);
+  pthread_create (&t7, NULL, rider, NULL);
+  pthread_create (&t8, NULL, rider, NULL);
+  pthread_create (&t9, NULL, rider, NULL);
+  pthread_create (&t10, NULL, rider, NULL);
 
-    pthread_join (t6, NULL);
-    repeticoes--;
-  }
+  pthread_join (t6, NULL);
 
-  printf ("%u repeticoes.\n", NUMERO_DE_REPETICOES);
-  printf ("Nao houve deadlock!!!");
+  printf ("Nao houve deadlock!!!\n");
 
   return OK;
 }
